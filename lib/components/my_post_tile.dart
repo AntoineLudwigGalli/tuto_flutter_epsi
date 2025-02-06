@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:tuto_flutter_epsi/components/my_input_alert_box.dart';
+import 'package:tuto_flutter_epsi/helper/time_formatter.dart';
 import 'package:tuto_flutter_epsi/services/auth/auth_service.dart';
 import 'package:tuto_flutter_epsi/services/database/database_provider.dart';
 
@@ -39,6 +41,63 @@ class _MyPostTileState extends State<MyPostTile> {
   late final listeningProvider = Provider.of<DatabaseProvider>(context);
   late final databaseProvider =
       Provider.of<DatabaseProvider>(context, listen: false);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadComments();
+  }
+
+  /*
+   LIKE
+  */
+// methode pour liker ou unliker
+  void toggleLikePost() async {
+    try {
+      await databaseProvider.toggleLike(widget.post.id);
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  /*
+  Commentaires
+  */
+  // controller
+  final _commentController = TextEditingController();
+
+  // boite de dialogue pour ajouter un nouveau commentaire
+  void _openNewCommentBox() {
+    showDialog(
+      context: context,
+      builder: (context) => MyInputAlertBox(
+        textController: _commentController,
+        hintText: 'Saisissez votre commentaire',
+        onPressed: () async {
+          await _addComment();
+        },
+        onPressedText: 'Publier',
+      ),
+    );
+  }
+
+  // Ajouter un commentaire
+  Future<void> _addComment() async {
+    // si le controller est vide, on ne fait rien
+    if (_commentController.text.trim().isEmpty) return;
+
+    try {
+      await databaseProvider.addComment(
+          widget.post.id, _commentController.text.trim());
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  // Charger les commentaires
+  Future<void> _loadComments() async{
+    await databaseProvider.loadComments(widget.post.id);
+  }
 
   // method pour afficher les options d'un post
   void _showOptions() {
@@ -101,6 +160,19 @@ class _MyPostTileState extends State<MyPostTile> {
   // UI
   @override
   Widget build(BuildContext context) {
+    /*
+    Listeners
+    * */
+    // Est ce que l'utilisateur aime le post ?
+    bool likedByCurrentUser =
+        listeningProvider.isPostLikedByCurrentUser(widget.post.id);
+
+    // Compteur de likes
+    int likeCount = listeningProvider.getLikeCount(widget.post.id);
+
+    // compteur de commentaires
+    int commentCount = listeningProvider.getComments(widget.post.id).length;
+
     return GestureDetector(
       onTap: widget.onPostTap,
       child: Container(
@@ -166,17 +238,25 @@ class _MyPostTileState extends State<MyPostTile> {
                     children: [
                       // bouton like
                       GestureDetector(
-                        onTap: () {},
-                        child: Icon(
-                          Icons.favorite,
-                        ),
+                        onTap: toggleLikePost,
+                        child: likedByCurrentUser
+                            ? Icon(
+                                Icons.favorite,
+                                color: Colors.red,
+                              )
+                            : Icon(
+                                Icons.favorite,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                       ),
 
-                      SizedBox(width: 5,),
+                      SizedBox(
+                        width: 5,
+                      ),
 
                       // compteur de likes
                       Text(
-                        "3",
+                        likeCount != 0 ? likeCount.toString() : '',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
                         ),
@@ -184,27 +264,40 @@ class _MyPostTileState extends State<MyPostTile> {
                     ],
                   ),
                 ),
+
                 //bouton commenter
                 Row(
                   children: [
                     // bouton commenter
                     GestureDetector(
-                      onTap: () {},
+                      onTap: _openNewCommentBox,
                       child: Icon(
                         Icons.comment,
                       ),
                     ),
 
-                    SizedBox(width: 5,),
+                    SizedBox(
+                      width: 5,
+                    ),
 
-                    // compteur de likes
+                    // compteur de commentaires
                     Text(
-                      "5",
+                      commentCount != 0 ? commentCount.toString() : '',
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ],
+                ),
+
+                Spacer(),
+
+                // timestamp
+                Text(
+                  formatTimestamp(widget.post.timestamp),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
               ],
             )

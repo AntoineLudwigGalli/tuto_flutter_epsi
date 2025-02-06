@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:tuto_flutter_epsi/services/auth/auth_service.dart';
 import 'package:tuto_flutter_epsi/services/database/database_service.dart';
+import '../../models/comment.dart';
 import '../../models/post.dart';
 import '../../models/user.dart';
 
@@ -124,5 +125,77 @@ void initializeLikeMap() {
   }
 }
 
+// methode toggle like
+Future<void> toggleLike(String postId) async {
+  /*
+  Méthode en plusieurs parties :
+  - 1ere partie va mettre à jour les données en local afin d'avoir une UI réactive et performante
+  sans impression de lag ou de lenteur pour l'utilisateur
+  - 2e partie va mettre à jour et récupérer les données réelles depuis la base de données
+  S'il y a un soucis avec la bdd, on remet l'UI dans son état originel
+
+  */
+
+  // AU cas ou la liaison avec la bdd a un soucis, on commence par stocker les données
+  // à envoyer en local
+  final likedPostOriginal = _likedPosts;
+  final likeCountsOriginal = _likeCounts;
+
+  // réaliser action like ou unlike
+  if(_likedPosts.contains(postId)) {
+    _likedPosts.remove(postId);
+    _likeCounts[postId] = (_likeCounts[postId] ?? 0) - 1;
+  } else {
+    _likedPosts.add(postId);
+    _likeCounts[postId] = (_likeCounts[postId] ?? 0) + 1;
+  }
+
+  // maj l'UI
+  notifyListeners();
+
+  // on essaie de mettre à jour les données en bdd (invisible pour l'utilisateur)
+  try{
+    await _db.toggleLikeInFirebase(postId);
+  } catch(e) {
+    // revenir à l'état initial de l'UI s'il y a un soucis avec la bdd
+    _likedPosts = likedPostOriginal;
+    _likeCounts = likeCountsOriginal;
+
+    notifyListeners();
+  }
+}
+
+/*
+Commentaires
+*/
+// liste locale de commentaires
+final Map<String, List<Comment>> _comments = {};
+
+// récupère les commentaires en local
+List<Comment> getComments(String postId) => _comments[postId] ?? [];
+
+// récupérer les commentaires associés au post depuis la bdd
+Future<void> loadComments(String postId) async {
+  // récupère tous les commentaires associés à cce post
+  final allComments = await _db.getCommentsFromFirebase(postId);
+
+  // maj des données locales
+  _comments[postId] = allComments;
+
+  // maj UI
+  notifyListeners();
+}
+
+// Ajouter un commentaire
+Future<void> addComment(String postId, message) async {
+  await _db.addCommentInFirebase(postId, message);
+  await loadComments(postId);
+}
+
+// Supprimer un commentaire
+Future<void> deleteComments(String commentId, postId) async {
+  await _db.deleteCommentInFirebase(commentId);
+  await loadComments(postId);
+}
 
 }

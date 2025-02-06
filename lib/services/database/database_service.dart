@@ -18,6 +18,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tuto_flutter_epsi/models/user.dart';
 import 'package:tuto_flutter_epsi/services/auth/auth_service.dart';
 
+import '../../models/comment.dart';
 import '../../models/post.dart';
 
 class DatabaseService {
@@ -141,27 +142,28 @@ POSTS
   */
 
 // Like/unlike un post
-Future<void> toggleLikeInFirebase(String postId) async {
-  try{
-    // répérer l'uid
-    String uid = _auth.currentUser!.uid;
-    // on va au doc du postId
-    DocumentReference postDoc = _db.collection('Posts').doc(postId);
+  Future<void> toggleLikeInFirebase(String postId) async {
+    try {
+      // répérer l'uid
+      String uid = _auth.currentUser!.uid;
+      // on va au doc du postId
+      DocumentReference postDoc = _db.collection('Posts').doc(postId);
 
-    // on fait le like
-    await _db.runTransaction(
-        (transaction) async {
+      // on fait le like
+      await _db.runTransaction(
+            (transaction) async {
           // récupère les données du post
           DocumentSnapshot postSnapshot = await transaction.get(postDoc);
 
           // récupère les likes des users qui ont liké et on crée une liste avec (liste de uids)
-          List<String> likedBy = List<String>.from(postSnapshot['likedBy'] ?? []);
+          List<String> likedBy =
+          List<String>.from(postSnapshot['likedBy'] ?? []);
 
           // récupère le compteur de likes
           int currentLikeCount = postSnapshot['likes'];
 
           // Si l'utilisateur n'a pas encore liké le post -> on like
-          if(!likedBy.contains(uid)) {
+          if (!likedBy.contains(uid)) {
             // ajoute l'uid de l'utilisateur connecté à la liste likedBy
             likedBy.add(uid);
 
@@ -175,18 +177,89 @@ Future<void> toggleLikeInFirebase(String postId) async {
           }
 
           // on met à jour Firebase
-          transaction.update(
-            postDoc, {
+          transaction.update(postDoc, {
             'likes': currentLikeCount,
             'likedBy': likedBy,
           });
         },
-    );
-  } catch (e) {
-    print(e);
+      );
+    } catch (e) {
+      print(e);
+    }
   }
-}
 
+/* Commentaires */
+// Ajouter un commentaire
+  Future<void> addCommentInFirebase(String postId, message) async {
+    try {
+      // récupère utilisateur actuel
+      String uid = _auth.currentUser!.uid;
+      UserProfile? user = await getUserFromFirebase(uid);
 
+      // crée un nouveau commentaire
+      Comment newComment = Comment(
+        id: '',
+        postId: postId,
+        uid: uid,
+        name: user!.name,
+        username: user.username,
+        message: message,
+        timestamp: Timestamp.now(),
+      );
+
+      // Map on l'objet comment en document firestore
+      Map<String, dynamic> newCommentMap = newComment.toMap();
+
+      // sauvegarde en bdd
+      await _db.collection("Comments").add(newCommentMap);
+    } catch (e) {
+      print(e);
+    }
+  }
+
+// Supprimer un commentaire
+  Future<void> deleteCommentInFirebase(String commentId) async {
+    try {
+      await _db.collection("Comments").doc(commentId).delete();
+    } catch (e) {
+      print(e);
+    }
+  }
+
+// récupérer les commentaires associés à un post
+  Future<List<Comment>> getCommentsFromFirebase(String postId) async {
+    try {
+      // récupère les commentaires associés au postId dans Firebase
+      QuerySnapshot snapshot = await _db
+          .collection("Comments")
+          .where("postId", isEqualTo: postId)
+          .get();
+
+      // retourne la liste des commentaires
+      return snapshot.docs.map((doc) => Comment.fromDocument(doc)).toList();
+    } catch (e) {
+      print(e);
+      return [];
+    }
+  }
+
+  /*
+  RECHERCHE UTILISATEURS
+  */
+  // rechercher un utilisateur par username
+  Future<List<UserProfile>> searchUserInFirebase(String searchTerm) async {
+    try {
+      QuerySnapshot snapshot = await _db.collection("Users")
+          .where('username', isGreaterThanOrEqualTo: searchTerm) // tous les noms commençant par searchTerm
+          .where('username',
+          isLessThanOrEqualTo: '$searchTerm\uf8ff') // tous les noms commeçant par searchTerm même avec des lettres supplémentaires
+          .get();
+
+      return snapshot.docs.map((doc) => UserProfile.fromDocument(doc)).toList();
+    } catch (e) {
+      print(e);
+      return[];
+    }
+  }
 
 }

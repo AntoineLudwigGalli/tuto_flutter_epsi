@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tuto_flutter_epsi/pages/profile_page.dart';
+import 'package:tuto_flutter_epsi/pages/search_page.dart';
 import 'package:tuto_flutter_epsi/pages/settings_page.dart';
 import 'package:tuto_flutter_epsi/services/auth/auth_service.dart';
 
@@ -39,7 +40,10 @@ class MyDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: Theme
+          .of(context)
+          .colorScheme
+          .surface,
 
       // Icone (logo)
       child: SafeArea(
@@ -52,13 +56,19 @@ class MyDrawer extends StatelessWidget {
                 child: Icon(
                   Icons.person,
                   size: 72,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: Theme
+                      .of(context)
+                      .colorScheme
+                      .primary,
                 ),
               ),
               Divider(
                 indent: 25,
                 endIndent: 25,
-                color: Theme.of(context).colorScheme.secondary,
+                color: Theme
+                    .of(context)
+                    .colorScheme
+                    .secondary,
               ),
               const SizedBox(
                 height: 10,
@@ -95,7 +105,14 @@ class MyDrawer extends StatelessWidget {
               MyDrawerTile(
                 title: "Rechercher",
                 icon: Icons.search,
-                onTap: () {},
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => SearchPage(),
+                      ),
+                  );
+                },
               ),
 
               // Paramètres
