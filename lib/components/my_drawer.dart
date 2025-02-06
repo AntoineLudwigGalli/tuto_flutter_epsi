@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:tuto_flutter_epsi/pages/profile_page.dart';
+import 'package:tuto_flutter_epsi/pages/settings_page.dart';
+import 'package:tuto_flutter_epsi/services/auth/auth_service.dart';
 
 import 'my_drawer_tile.dart';
 
@@ -22,7 +25,15 @@ Les options du menu sont :
 */
 
 class MyDrawer extends StatelessWidget {
-  const MyDrawer({super.key});
+  MyDrawer({super.key});
+
+  // auth service
+  final _auth = AuthService();
+
+  // fonction déconnexion
+  void logout() {
+    _auth.logout();
+  }
 
   // Affichage UI
   @override
@@ -67,7 +78,17 @@ class MyDrawer extends StatelessWidget {
               MyDrawerTile(
                 title: "Profil",
                 icon: Icons.person,
-                onTap: () {},
+                onTap: () {
+                  Navigator.pop(context);
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ProfilePage(uid: _auth.getCurrentUid()),
+                    ),
+                  );
+                },
               ),
 
               // Rechercher
@@ -81,14 +102,22 @@ class MyDrawer extends StatelessWidget {
               MyDrawerTile(
                 title: "Paramètres",
                 icon: Icons.settings,
-                onTap: () {},
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SettingsPage(),
+                    ),
+                  );
+                },
               ),
 
               // Déconnexion
               MyDrawerTile(
                 title: "Deconnexion",
                 icon: Icons.logout,
-                onTap: () {},
+                onTap: logout,
               ),
             ],
           ),

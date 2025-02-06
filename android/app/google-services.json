@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "428656020674",
+    "project_id": "tuto-flutter-epsi",
+    "storage_bucket": "tuto-flutter-epsi.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:428656020674:android:c1dadc43b5b1827d747f5b",
+        "android_client_info": {
+          "package_name": "com.alicedeveloppementweb.tuto_flutter_epsi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAh980ge_kAZDZ7Pu3EnxM3csBw_g70UPQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
